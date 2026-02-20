@@ -1,0 +1,29 @@
+# API блога на фреймворке FastAPI
+
+Данный репозиторий содержит реализацию базового функционала блога. Написан на Python + FastAPI.
+
+## Установка и запуск
+
+1. Создайте файл `.env` с переменными среды, методом копирования шаблонного файла `.env.template`.
+
+``` bash
+cp ./.env.template ./.env
+```
+
+2. Измените значения переменных файла `.env`.
+
+3. Создайте и запустите контейнеры с компонентами приложения.
+
+``` bash
+docker compose up -d
+```
+
+4. Запустите миграции.
+
+``` bash
+docker compose exec -i app alembic revision --autogenerate -m 'do all the migrations' && alembic upgrade head
+```
+
+5. Откройте страницу с OpenAPI-документацией в браузере:
+
+[http://localhost:8080/docs](http://localhost:8080/docs)

@@ -1,0 +1,45 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    depends_on:
+      - db
+    env_file:
+      - ./.env
+    networks:
+      - external
+      - internal
+    ports:
+      - ${APP_PORT}:8000
+    restart: unless-stopped
+
+  db:
+    build:
+      context: ./docker/postgres
+      dockerfile: ./Dockerfile
+    env_file:
+      - ./.env
+    environment:
+      - PGDATA=/data
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_DATABASE}
+    networks:
+      - internal
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+    volumes:
+      - ./db-data/prod/data:/data
+
+volumes:
+  db-data:
+    external: true
+
+networks:
+  external:
+    internal: false
+
+  internal:
+    internal: true
