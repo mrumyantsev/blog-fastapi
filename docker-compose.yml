@@ -4,7 +4,8 @@ services:
       context: .
       dockerfile: ./Dockerfile
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     env_file:
       - ./.env
     networks:
@@ -32,6 +33,11 @@ services:
     restart: unless-stopped
     volumes:
       - ./db-data/prod/data:/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   db-data:
