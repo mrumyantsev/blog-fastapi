@@ -1,31 +1,45 @@
-import os
-
-import secrets
-from pydantic_settings import BaseSettings
-
-
-db_scheme = os.getenv('DB_SCHEME')
-db_user = os.getenv('DB_USER')
-db_password = os.getenv('DB_PASSWORD')
-db_database = os.getenv('DB_DATABASE')
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file='./.env',
+        env_file_encoding='utf-8',
+        extra='ignore'
+    )
+
     # General.
-    APP_NAME: str = os.getenv('APP_NAME')
-    TOKEN_URL: str = os.getenv('TOKEN_URL')
-    ITEMS_LIMIT_PER_PAGE: int = int(os.getenv('ITEMS_LIMIT_PER_PAGE'))
-    POST_MIN_CHARACTERS: int = int(os.getenv('POST_MIN_CHARACTERS'))
-    POST_MAX_PREVIEW_CHARACTERS: int = int(os.getenv('POST_MAX_PREVIEW_CHARACTERS'))
+    APP_NAME: str = 'Blog'
+    APP_VERSION: str
+    TOKEN_URL: str
+    ITEM_LIMIT_PER_PAGE: int = 20
+    POST_MIN_CHARACTERS: int = 100
+    POST_MAX_PREVIEW_CHARACTERS: int = 200
 
     # Database.
-    DATABASE_URL: str = f'{db_scheme}://{db_user}:{db_password}@localhost/{db_database}'
+    DB_DRIVER: str
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_DATABASE: str
 
     # Security.
-    SECRET_KEY: str = secrets.token_urlsafe(32)
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES'))
-    REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv('REFRESH_TOKEN_EXPIRE_DAYS'))
-    TOKEN_ENCRYPTING_ALGORITHM: str = os.getenv('ALGORITHM')
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 1
+    TOKEN_ENCRYPTING_ALGORITHM: str
+    TOKEN_SECRET_KEY: str
+
+    @property
+    def database_url(self) -> str:
+        """
+        Generates the full database connection string.
+        """
+
+        return (
+            f'{self.DB_DRIVER}://'
+            f'{self.DB_USER}:'
+            f'{self.DB_PASSWORD}@localhost/'
+            f'{self.DB_DATABASE}'
+        )
 
 
 settings = Settings()

@@ -3,18 +3,19 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from models import User, UserCreateRequest, ReturnIdResponse, Token
-from database import get_db
+from models import User, UserCreateRequest, ReturnIdResponse, TokenResponse
+from database import SessionDep
 from utils.utils import is_email_valid
 from utils.password_hash import is_password_verified, get_password_hash
 from utils.jwt_token import create_access_token
 
 
 router = APIRouter(prefix='/api', tags=['api'])
+OAuth2PasswordRequest = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 
 @router.post('/register', response_model=ReturnIdResponse)
-def register(req: UserCreateRequest, db=Depends(get_db)):
+def register(req: UserCreateRequest, db: SessionDep):
     if not is_email_valid(req.email):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='email is invalid')
 
@@ -37,8 +38,8 @@ def register(req: UserCreateRequest, db=Depends(get_db)):
     return ReturnIdResponse(id=user.id)
 
 
-@router.post('/login', response_model=Token)
-def login(req: Annotated[OAuth2PasswordRequestForm, Depends()], db=Depends(get_db)):
+@router.post('/login', response_model=TokenResponse)
+def login(req: OAuth2PasswordRequest, db: SessionDep):
     user = db.query(User).filter(User.username == req.username).first()
 
     if not user:
@@ -50,7 +51,7 @@ def login(req: Annotated[OAuth2PasswordRequestForm, Depends()], db=Depends(get_d
     if not is_password_verified(req.password, user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='incorrect password')
 
-    return Token(
+    return TokenResponse(
         access_token=create_access_token(req.username),
         token_type='bearer',
     )

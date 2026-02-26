@@ -1,13 +1,12 @@
-from typing import Annotated
+from fastapi import APIRouter, HTTPException, status
+from sqlalchemy import select, update, and_, func
+from sqlalchemy.sql.expression import Select
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, update, func
-
-from models import User, Post, Tag, PostTag, PostCreateRequest, ReturnIdResponse
-from database import get_db
-from utils.jwt_token import get_current_user
-from utils.pagination import pagination
+from models import TagAuthorPaginationQuery, User, Post, Tag, PostTag, PostCreateRequest, ReturnIdResponse
+from database import SessionDep
+from utils.jwt_token import CurrentUserDep
 from utils.utils import make_slug
+from utils.pagination import pagination
 from config import settings
 
 
@@ -15,29 +14,36 @@ router = APIRouter(prefix='/api/posts', tags=['posts'])
 
 
 @router.get('')
-def get_all_posts(page: int = 1, limit: int = settings.ITEMS_LIMIT_PER_PAGE, tag: str = '', author: str = '', db=Depends(get_db)):
-    stmt = select(Post)
+def get_all_posts(query: TagAuthorPaginationQuery, db: SessionDep):
+    stmt: Select = None
 
-    if author != '' and tag == '':
-        stmt = select(Post, User).join(User, User.id == Post.author)
-    elif tag != '' and author == '':
-        stmt = select(Post, PostTag, Tag).join(PostTag, PostTag.post == Post.id)
-    elif tag != '' and author != '':
+    if query.author != '' and query.tag == '':
         stmt = (
-            select(Post, User, PostTag, Tag)
+            select(Post, User)
+            .join(User, User.id == Post.author)
+            .where(User.username == query.author)
+        )
+    elif query.tag != '' and query.author == '':
+        stmt = (
+            select(Post, PostTag, Tag)
             .join(PostTag, PostTag.post == Post.id)
             .join(Tag, Tag.id == PostTag.tag)
+            .where(Tag.name == query.tag)
         )
+    elif query.author != '' and query.tag != '':
+        stmt = (
+            select(Post, User, PostTag, Tag)
+            .join(User, User.id == Post.author)
+            .join(PostTag, PostTag.post == Post.id)
+            .join(Tag, Tag.id == PostTag.tag)
+            .where(and_(User.username == query.author, Tag.name == query.tag))
+        )
+    else:
+        stmt = select(Post)
 
-    if tag != '':
-        stmt = stmt.where(Tag.name == tag)
+    stmt = pagination(stmt, query.page, query.limit)
 
-    if author != '':
-        stmt = stmt.where(User.username == author)
-
-    stmt = pagination(stmt, page, limit)
-
-    posts = db.scalars(stmt).all()
+    posts = db.scalars(stmt.order_by(Post.id)).all()
 
     for post in posts:
         post.content = post.content[:settings.POST_MAX_PREVIEW_CHARACTERS]
@@ -46,7 +52,7 @@ def get_all_posts(page: int = 1, limit: int = settings.ITEMS_LIMIT_PER_PAGE, tag
 
 
 @router.get('/{slug}')
-def get_post(slug: str, db=Depends(get_db)):
+def get_post(slug: str, db: SessionDep):
     post = db.query(Post).filter(Post.slug == slug).first()
 
     if not post:
@@ -62,7 +68,7 @@ def get_post(slug: str, db=Depends(get_db)):
 
 
 @router.post('')
-def create_post(req: PostCreateRequest, current_user: Annotated[User, Depends(get_current_user)], db=Depends(get_db)):
+def create_post(req: PostCreateRequest, current_user: CurrentUserDep, db: SessionDep):
     if len(req.content) < settings.POST_MIN_CHARACTERS:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'content length is less than {settings.POST_MIN_CHARACTERS} characters')
 
@@ -81,7 +87,7 @@ def create_post(req: PostCreateRequest, current_user: Annotated[User, Depends(ge
 
 
 @router.put('/{slug}')
-def update_post(req: PostCreateRequest, slug: str, current_user: Annotated[User, Depends(get_current_user)], db=Depends(get_db)):
+def update_post(slug: str, req: PostCreateRequest, current_user: CurrentUserDep, db: SessionDep):
     if len(req.content) < settings.POST_MIN_CHARACTERS:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'content length is less than {settings.POST_MIN_CHARACTERS} characters')
 
@@ -89,6 +95,9 @@ def update_post(req: PostCreateRequest, slug: str, current_user: Annotated[User,
 
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
+
+    if post.author != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='you are not the author of the post')
 
     stmt = (
         update(Post)
@@ -109,11 +118,14 @@ def update_post(req: PostCreateRequest, slug: str, current_user: Annotated[User,
 
 
 @router.delete('/{slug}')
-def delete_post(slug: str, current_user: Annotated[User, Depends(get_current_user)], db=Depends(get_db)):
+def delete_post(slug: str, current_user: CurrentUserDep, db: SessionDep):
     post = db.query(Post).filter(Post.slug == slug).first()
 
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
+
+    if post.author != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='you are not the author of the post')
 
     db.delete(post)
     db.commit()

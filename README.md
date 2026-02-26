@@ -21,7 +21,7 @@ docker compose up -d
 4. Запустите миграции.
 
 ``` bash
-docker compose exec -i app alembic revision --autogenerate -m 'do all the migrations' && alembic upgrade head
+docker compose exec -i app alembic upgrade head
 ```
 
 5. Откройте страницу с OpenAPI-документацией в браузере:

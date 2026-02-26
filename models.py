@@ -1,12 +1,33 @@
+from typing import Annotated
+
+from fastapi import Query
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, func
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from pydantic import BaseModel, Field
+
+from config import settings
 
 
 Base = declarative_base()
 
 
-class Token(BaseModel):
+class Pagination(BaseModel):
+    page: int = Field(1, ge=1, description='Page offset.')
+    limit: int = Field(settings.ITEM_LIMIT_PER_PAGE, ge=0, le=100, description='Item limit per page.')
+
+
+PaginationQuery = Annotated[Pagination, Query()]
+
+
+class TagAuthorPagination(Pagination, BaseModel):
+    tag: str = Field('', description='Search by exact tag name.')
+    author: str = Field('', description='Search by exact post author username.')
+
+
+TagAuthorPaginationQuery = Annotated[TagAuthorPagination, Query()]
+
+
+class TokenResponse(BaseModel):
     access_token: str
     token_type: str
 

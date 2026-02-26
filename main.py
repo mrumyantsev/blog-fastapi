@@ -7,6 +7,7 @@ from routers import api, posts, comments, users
 # HTTP server setup.
 app = FastAPI(
     title=settings.APP_NAME,
+    version=settings.APP_VERSION,
     swagger_ui_parameters={"defaultModelsExpandDepth": -1}
 )
 

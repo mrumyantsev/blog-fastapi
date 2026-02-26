@@ -1,26 +1,27 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
-from database import get_db
+from database import SessionDep
+from models import User, Post, PaginationQuery
 from utils.pagination import pagination
-from models import User, Post
-from config import settings
 
 
 router = APIRouter(prefix='/api/users', tags=['users'])
 
 
 @router.get('')
-def get_all_users(page: int = 1, limit: int = settings.ITEMS_LIMIT_PER_PAGE, db=Depends(get_db)):
-    stmt = pagination(select(User), page, limit)
+def get_all_users(query: PaginationQuery, db: SessionDep):
+    stmt = select(User)
 
-    users = db.scalars(stmt).all()
+    stmt = pagination(stmt, query.page, query.limit)
+
+    users = db.scalars(stmt.order_by(User.id)).all()
 
     return users
 
 
 @router.get('/{username}')
-def get_user_by_username(username: str, db=Depends(get_db)):
+def get_user_by_username(username: str, db: SessionDep):
     user = db.query(User).filter(User.username == username).first()
 
     if not user:
@@ -30,15 +31,15 @@ def get_user_by_username(username: str, db=Depends(get_db)):
 
 
 @router.get('/{username}/posts')
-def get_user_posts(username: str, page: int = 1, limit: int = settings.ITEMS_LIMIT_PER_PAGE, db=Depends(get_db)):
+def get_user_posts(username: str, query: PaginationQuery, db: SessionDep):
     stmt = (
         select(Post, User)
         .join(User, User.id == Post.author)
         .where(User.username == username)
     )
 
-    stmt = pagination(stmt, page, limit)
+    stmt = pagination(stmt, query.page, query.limit)
 
-    posts = db.scalars(stmt).all()
+    posts = db.scalars(stmt.order_by(Post.id)).all()
 
     return posts

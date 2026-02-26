@@ -1,36 +1,33 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 import bleach
 
-from models import User, Post, Comment, CommentCreateRequest, ReturnIdResponse
-from database import get_db
-from utils.jwt_token import get_current_user
+from models import PaginationQuery, Post, Comment, CommentCreateRequest, ReturnIdResponse
+from database import SessionDep
+from utils.jwt_token import CurrentUserDep
 from utils.pagination import pagination
-from config import settings
 
 
 router = APIRouter(prefix='/api', tags=['comments'])
 
 
 @router.get('/posts/{slug}/comments')
-def get_post_comments(slug: str, page: int = 1, limit: int = settings.ITEMS_LIMIT_PER_PAGE, db=Depends(get_db)):
+def get_post_comments(slug: str, query: PaginationQuery, db: SessionDep):
     stmt = (
         select(Comment, Post)
         .join(Post, Post.id == Comment.post)
         .where(Post.slug == slug)
     )
 
-    stmt = pagination(stmt, page, limit)
+    stmt = pagination(stmt, query.page, query.limit)
 
-    comments = db.scalars(stmt).all()
+    comments = db.scalars(stmt.order_by(Comment.id)).all()
 
     return comments
 
 
 @router.post('/posts/{slug}/comments', response_model=ReturnIdResponse)
-def create_post_comment(req: CommentCreateRequest, slug: str, current_user: Annotated[User, Depends(get_current_user)], db=Depends(get_db)):
+def create_post_comment(slug: str, req: CommentCreateRequest, current_user: CurrentUserDep, db: SessionDep):
     post = db.query(Post).filter(Post.slug == slug).first()
 
     if not post:
@@ -57,8 +54,11 @@ def create_post_comment(req: CommentCreateRequest, slug: str, current_user: Anno
 
 
 @router.delete('/comments/{id}', response_model=ReturnIdResponse)
-def delete_comment(id: int, current_user: Annotated[User, Depends(get_current_user)], db=Depends(get_db)):
+def delete_comment(id: int, current_user: CurrentUserDep, db: SessionDep):
     comment = db.query(Comment).filter(Comment.id == id).first()
+
+    if comment.author != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='you are not the author of the comment')
 
     db.delete(comment)
     db.commit()

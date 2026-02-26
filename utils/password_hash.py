@@ -6,7 +6,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def is_password_verified(plain_password: str, hashed_password: str) -> bool:
     """
-    Verify plain password against hashed password
+    Verifies plain password against hashed password.
     """
 
     return pwd_context.verify(plain_password, hashed_password)
@@ -14,7 +14,7 @@ def is_password_verified(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     """
-    Generate password hash from plain password
+    Generates password hash from plain password.
     """
 
     return pwd_context.hash(password)
