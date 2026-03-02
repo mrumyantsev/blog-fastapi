@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from config import settings
-from routers import api, posts, comments, users
+from routers import auth, posts, comments, users
 
 
 # HTTP server setup.
@@ -12,7 +12,7 @@ app = FastAPI(
 )
 
 # Routes registering.
-app.include_router(api.router)
+app.include_router(auth.router)
 app.include_router(posts.router)
 app.include_router(comments.router)
 app.include_router(users.router)

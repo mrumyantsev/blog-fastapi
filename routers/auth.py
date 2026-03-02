@@ -10,7 +10,7 @@ from utils.password_hash import is_password_verified, get_password_hash
 from utils.jwt_token import create_access_token
 
 
-router = APIRouter(prefix='/api', tags=['api'])
+router = APIRouter(prefix='/api/auth', tags=['auth'])
 OAuth2PasswordRequest = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 
