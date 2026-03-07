@@ -1,6 +1,10 @@
 from passlib.context import CryptContext
 
 
+__all__ = [
+    'is_password_verified', 'get_password_hash'
+]
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 

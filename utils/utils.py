@@ -2,6 +2,11 @@ import re
 import time
 
 
+__all__ = [
+    'is_email_valid', 'make_slug'
+]
+
+
 def is_email_valid(email: str) -> bool:
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
 

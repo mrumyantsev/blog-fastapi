@@ -4,8 +4,7 @@ import bleach
 
 from models import PaginationQuery, Post, Comment, CommentCreateRequest, ReturnIdResponse
 from database import SessionDep
-from utils.jwt_token import CurrentUserDep
-from utils.pagination import pagination
+from utils import CurrentUserDep, pagination
 
 
 router = APIRouter(prefix='/api', tags=['comments'])

@@ -12,6 +12,11 @@ from database import SessionDep
 from models import User
 
 
+__all__ = [
+    'create_access_token', 'create_refresh_token',
+    'CurrentUserDep'
+]
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=settings.TOKEN_URL)
 
 

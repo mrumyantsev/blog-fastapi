@@ -5,9 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from models import User, UserCreateRequest, ReturnIdResponse, TokenResponse
 from database import SessionDep
-from utils.utils import is_email_valid
-from utils.password_hash import is_password_verified, get_password_hash
-from utils.jwt_token import create_access_token
+from utils import is_email_valid, is_password_verified, get_password_hash, create_access_token
 
 
 router = APIRouter(prefix='/api/auth', tags=['auth'])

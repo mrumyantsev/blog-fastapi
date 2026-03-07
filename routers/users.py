@@ -3,7 +3,7 @@ from sqlalchemy import select
 
 from database import SessionDep
 from models import User, Post, PaginationQuery
-from utils.pagination import pagination
+from utils import pagination
 
 
 router = APIRouter(prefix='/api/users', tags=['users'])

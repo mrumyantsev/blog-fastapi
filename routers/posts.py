@@ -4,9 +4,7 @@ from sqlalchemy.sql.expression import Select
 
 from models import TagAuthorPaginationQuery, User, Post, Tag, PostTag, PostCreateRequest, ReturnIdResponse
 from database import SessionDep
-from utils.jwt_token import CurrentUserDep
-from utils.utils import make_slug
-from utils.pagination import pagination
+from utils import CurrentUserDep, make_slug, pagination
 from config import settings
 
 
